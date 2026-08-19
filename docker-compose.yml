@@ -2,19 +2,32 @@ version: "3.9"
 
 services:
   api:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.api
     ports:
       - "8000:8000"
     volumes:
-      - db_data:/data
+      - db-data:/app/data
     environment:
-      - DB_PATH=/data/store_intelligence.db
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+      - STORE_INTEL_DB=/app/data/store_intel.db
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      - STORE_INTEL_API_URL=http://api:8000
+      - STORE_INTEL_STORE_ID=STORE_1
+    depends_on:
+      - api
 
 volumes:
-  db_data:
+  db-data:
+
+# Note: pipeline.py is not containerized here — it needs access to a
+# camera/video file (and often a display window for debugging), so
+# it's meant to be run on the host:
+#   python pipeline.py --video path/to/video.mp4 --api-url http://localhost:8000
